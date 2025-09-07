@@ -1,168 +1,167 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+
+type Question = {
+  key: keyof OnboardingForm;
+  question: string;
+  options: { label: string; value: any }[];
+};
+
+type OnboardingForm = {
+  age: number | null;
+  income: number | null;
+  has_children: boolean;
+  is_student: boolean;
+  is_graduating: boolean;
+  has_debt: boolean;
+};
 
 export default function OnboardingPage() {
   const router = useRouter();
-  const [form, setForm] = useState({
-    age: '',
-    income: '',
+  const [form, setForm] = useState<OnboardingForm>({
+    age: null,
+    income: null,
     has_children: false,
     is_student: false,
     is_graduating: false,
     has_debt: false,
   });
+
+  const [index, setIndex] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    const { name, type, checked, value } = e.target;
-    setForm((prev) => ({
-      ...prev,
-      [name]: type === 'checkbox' ? checked : value,
-    }));
-  };
+  const questions: Question[] = [
+    {
+      key: "age",
+      question: "What is your age range?",
+      options: [
+        { label: "Under 25", value: 22 },
+        { label: "25–34", value: 30 },
+        { label: "35–44", value: 40 },
+        { label: "45 or older", value: 55 },
+      ],
+    },
+    {
+      key: "income",
+      question: "Which annual income range best matches you?",
+      options: [
+        { label: "Under $30k", value: 25000 },
+        { label: "$30k–$60k", value: 45000 },
+        { label: "$60k–$100k", value: 80000 },
+        { label: "$100k+", value: 150000 },
+      ],
+    },
+    {
+      key: "has_children",
+      question: "Do you have children or dependents?",
+      options: [
+        { label: "Yes", value: true },
+        { label: "No", value: false },
+      ],
+    },
+    {
+      key: "is_student",
+      question: "Are you currently a student?",
+      options: [
+        { label: "Yes", value: true },
+        { label: "No", value: false },
+      ],
+    },
+    {
+      key: "is_graduating",
+      question: "Are you graduating soon?",
+      options: [
+        { label: "Yes", value: true },
+        { label: "No", value: false },
+      ],
+    },
+    {
+      key: "has_debt",
+      question: "Do you have high-interest debt?",
+      options: [
+        { label: "Yes", value: true },
+        { label: "No", value: false },
+      ],
+    },
+  ];
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    setError(null);
+  const isLast = index === questions.length - 1;
+
+  const handleOption = async (value: any, key: keyof OnboardingForm) => {
+    setForm((prev) => ({ ...prev, [key]: value }));
+    // auto-advance
+    if (!isLast) {
+      setIndex((i) => i + 1);
+      return;
+    }
+
+    // final step: save onboarding answers and require signup before generating a plan
     try {
-      const baseUrl =
-        process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000';
-      // Build payload with parsed numbers
-      const payload = {
-        age: parseInt(form.age, 10),
-        income: parseFloat(form.income),
-        has_children: form.has_children,
-        is_student: form.is_student,
-        is_graduating: form.is_graduating,
-        has_debt: form.has_debt,
+      const finalPayload = {
+        age: form.age ?? (key === "age" ? Number(value) : 0),
+        income: form.income ?? (key === "income" ? Number(value) : 0),
+        has_children: (key === "has_children" ? Boolean(value) : form.has_children) || false,
+        is_student: (key === "is_student" ? Boolean(value) : form.is_student) || false,
+        is_graduating: (key === "is_graduating" ? Boolean(value) : form.is_graduating) || false,
+        has_debt: (key === "has_debt" ? Boolean(value) : form.has_debt) || false,
       };
-      const res = await fetch(`${baseUrl}/api/plan`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(payload),
-      });
-      if (!res.ok) {
-        throw new Error(`Error ${res.status}`);
+
+      if (typeof window !== "undefined") {
+        localStorage.setItem("lifestage_onboarding", JSON.stringify(finalPayload));
       }
-      const data = await res.json();
-      // Save plan in localStorage for retrieval on the plan page
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('lifestage_plan', JSON.stringify(data));
-      }
-      router.push('/plan');
+
+      // redirect to signup to require an account before generating the plan
+      router.push("/signup");
     } catch (err: any) {
-      setError(err.message ?? 'Something went wrong');
-    } finally {
-      setLoading(false);
+      setError(err?.message ?? "Something went wrong");
     }
   };
 
+  const handleBack = () => {
+    if (index > 0) setIndex((i) => i - 1);
+    else router.push("/");
+  };
+
+  const q = questions[index];
+
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center px-4 py-8">
+    <main className="flex min-h-screen items-center justify-center px-4 py-12">
       <div className="w-full max-w-xl">
-        <h1 className="text-3xl font-bold text-center mb-6">
-          Tell us about yourself
-        </h1>
-        <form
-          onSubmit={handleSubmit}
-          className="space-y-4 bg-white shadow-md rounded-lg p-6"
-        >
-          <div>
-            <label className="block mb-1 font-medium" htmlFor="age">
-              Age
-            </label>
-            <input
-              id="age"
-              name="age"
-              type="number"
-              min="0"
-              required
-              value={form.age}
-              onChange={handleChange}
-              className="w-full border border-gray-300 rounded-md p-2"
-            />
-          </div>
-          <div>
-            <label className="block mb-1 font-medium" htmlFor="income">
-              Annual income (USD)
-            </label>
-            <input
-              id="income"
-              name="income"
-              type="number"
-              min="0"
-              step="1000"
-              required
-              value={form.income}
-              onChange={handleChange}
-              className="w-full border border-gray-300 rounded-md p-2"
-            />
-          </div>
-          <div className="flex items-center">
-            <input
-              id="has_children"
-              name="has_children"
-              type="checkbox"
-              checked={form.has_children}
-              onChange={handleChange}
-              className="mr-2"
-            />
-            <label htmlFor="has_children">I have children/dependents</label>
-          </div>
-          <div className="flex items-center">
-            <input
-              id="is_student"
-              name="is_student"
-              type="checkbox"
-              checked={form.is_student}
-              onChange={handleChange}
-              className="mr-2"
-            />
-            <label htmlFor="is_student">I am currently a student</label>
-          </div>
-          <div className="flex items-center">
-            <input
-              id="is_graduating"
-              name="is_graduating"
-              type="checkbox"
-              checked={form.is_graduating}
-              onChange={handleChange}
-              className="mr-2"
-            />
-            <label htmlFor="is_graduating">I am graduating soon</label>
-          </div>
-          <div className="flex items-center">
-            <input
-              id="has_debt"
-              name="has_debt"
-              type="checkbox"
-              checked={form.has_debt}
-              onChange={handleChange}
-              className="mr-2"
-            />
-            <label htmlFor="has_debt">I have high‑interest debt</label>
+        <div className="bg-white shadow-md rounded-lg p-6">
+          <div className="flex items-center justify-between mb-4">
+            <button
+              type="button"
+              onClick={handleBack}
+              className="text-sm text-gray-600 hover:underline"
+            >
+              Back
+            </button>
+            <div className="text-sm text-gray-500">Question {index + 1} of {questions.length}</div>
           </div>
 
-          {error && (
-            <p className="text-red-500 text-sm">{error}</p>
-          )}
+          <h2 className="text-xl font-semibold mb-3">{q.question}</h2>
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 disabled:bg-blue-300"
-          >
-            {loading ? 'Generating plan...' : 'Get My Plan'}
-          </button>
-        </form>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {q.options.map((opt) => (
+              <button
+                key={opt.label}
+                type="button"
+                onClick={() => handleOption(opt.value, q.key)}
+                className="rounded-md border p-4 text-left hover:shadow-md focus:outline-none focus:ring-2 focus:ring-blue-300"
+                aria-pressed={form[q.key] === opt.value}
+              >
+                <div className="font-medium">{opt.label}</div>
+              </button>
+            ))}
+          </div>
+
+          {error && <p className="text-red-500 text-sm mt-4">{error}</p>}
+
+          {loading && <p className="text-gray-600 text-sm mt-4">Submitting...</p>}
+        </div>
       </div>
     </main>
   );

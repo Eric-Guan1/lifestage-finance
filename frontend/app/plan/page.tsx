@@ -64,10 +64,10 @@ export default function PlanPage() {
         </ol>
         <div className="text-center mt-8">
           <button
-            onClick={() => router.push('/onboarding')}
+            onClick={() => router.push('/dashboard')}
             className="inline-block bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700"
           >
-            Generate Another Plan
+            Go to Dashboard
           </button>
         </div>
       </div>
