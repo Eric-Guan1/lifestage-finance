@@ -1,4 +1,6 @@
 import Link from 'next/link';
+import GetStartedButton from './components/GetStartedButton';
+import HeroCTA from './components/HeroCTA';
 
 export default function HomePage() {
   return (
@@ -13,18 +15,7 @@ export default function HomePage() {
               set goals, and track progress with clarity.
             </p>
             <div className="flex items-center justify-center md:justify-start gap-3">
-              <Link
-                href="/onboarding"
-                className="inline-block rounded-lg bg-blue-600 px-6 py-3 text-white hover:bg-blue-700 transition-colors"
-              >
-                Get Started
-              </Link>
-              <Link
-                href="/dashboard"
-                className="inline-block rounded-lg border border-gray-200 px-5 py-3 text-gray-700 hover:bg-gray-50"
-              >
-                View Dashboard
-              </Link>
+              <HeroCTA />
             </div>
           </div>
 

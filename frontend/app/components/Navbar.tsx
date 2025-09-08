@@ -65,7 +65,7 @@ export default function Navbar() {
             </Link>
             {user ? (
               <>
-                <span className="px-3 py-2 text-sm">Welcome {user.first_name || 'there'}</span>
+                <span className="px-3 py-2 text-sm">Welcome, {user.first_name || 'there'}!</span>
                 <button onClick={signOut} className="px-3 py-2 text-sm text-gray-600 hover:underline">
                   Sign Out
                 </button>
